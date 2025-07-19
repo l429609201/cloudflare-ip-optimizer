@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, current_app, render_template, request
 from .optimizer import CloudflareOptimizer  # 确保使用相对导入
+from .updater import read_remote_file
 from .state import app_state
 from apscheduler.triggers.cron import CronTrigger
 import threading
@@ -64,6 +65,24 @@ def create_app(optimizer: CloudflareOptimizer, template_folder: str, static_fold
         except FileNotFoundError:
             logging.warning(f"日志文件未找到: {log_file_path}")
             return jsonify({"error": "日志文件未找到"}), 404
+
+    @app.route('/api/remote_file', methods=['GET'])
+    def get_remote_file():
+        target = request.args.get('target')
+        if not target or target not in ['openwrt', 'mosdns', 'adguardhome']:
+            return "必须提供有效的 target 参数 (openwrt, mosdns, adguardhome)", 400, {'Content-Type': 'text/plain; charset=utf-8'}
+
+        openwrt_config = current_app.config['CONFIG']['OpenWRT']
+        if not openwrt_config.getboolean('enabled'):
+            return "SSH 功能未在 config.ini 中启用", 403, {'Content-Type': 'text/plain; charset=utf-8'}
+
+        content, success = read_remote_file(openwrt_config, target)
+
+        if success:
+            return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+        else:
+            # content is the error message
+            return content, 500, {'Content-Type': 'text/plain; charset=utf-8'}
 
     @app.route('/api/config', methods=['POST'])  # 修改为 POST 方法
     def update_config():
