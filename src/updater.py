@@ -87,7 +87,7 @@ def _process_hosts_content(content: str, new_ip: str, format_style: str = 'ip_fi
     updated_content_str = "\n".join(new_lines)
     return updated_content_str, updated_content_str != content
 
-def _execute_remote_update(config, target_name: str, remote_path: str, process_content_func, *process_args):
+def _execute_remote_update(config, target_name: str, remote_path: str, process_content_func, *, process_args=()):
     """通用远程更新函数，处理SSH连接、文件操作和命令执行。"""
     host = config.get('host')
     port = config.getint('port', fallback=22)
