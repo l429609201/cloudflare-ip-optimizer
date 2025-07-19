@@ -76,6 +76,20 @@ header h1 {
     margin-bottom: 15px;
 }
 
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.card-header h2 {
+    margin: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+
 #status-card {
     display: flex;
     justify-content: space-between;
@@ -91,6 +105,21 @@ header h1 {
 
 #config-content {
     background-color: #f1f3f5; /* 文本区域背景色 */
+    color: var(--header-color);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.9em;
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 200px;
+}
+
+/* 远程文件内容区域 */
+#remote-file-content {
+    background-color: #f1f3f5;
     color: var(--header-color);
     border: 1px solid var(--border-color);
     border-radius: 5px;
@@ -148,6 +177,29 @@ header h1 {
     cursor: pointer;
     font-size: 0.9em;
     transition: background-color 0.3s ease;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+.remote-file-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+}
+
+.remote-file-btn:hover {
+    background-color: #5a6268;
+}
+.remote-file-btn.active {
+    background-color: var(--accent-color);
 }
 
 #save-config:hover {
