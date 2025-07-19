@@ -144,6 +144,52 @@ def _execute_remote_update(config, target_name: str, remote_path: str, process_c
     except Exception as e:
         logging.error(f"{target_name} 更新: 发生错误: {e}")
 
+def read_remote_file(config, target: str) -> tuple[str, bool]:
+    """
+    通过 SSH 连接到远程设备并读取指定文件的内容。
+    返回 (文件内容, 是否成功) 的元组。
+    """
+    host = config.get('host')
+    port = config.getint('port', fallback=22)
+    username = config.get('username')
+    password = config.get('password')
+
+    if target == 'adguardhome':
+        remote_path = config.get('adguardhome_config_path')
+    else: # openwrt or mosdns
+        remote_path = config.get(f"{target}_hosts_path")
+
+    if not remote_path:
+        error_msg = f"远程文件读取: 未在配置文件中找到 '{target}' 的远程路径。"
+        logging.error(error_msg)
+        return error_msg, False
+
+    logging.info(f"远程文件读取: 准备连接到 {host}:{port} 读取 {remote_path}")
+
+    try:
+        with paramiko.SSHClient() as ssh_client:
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(hostname=host, port=port, username=username, password=password, timeout=10)
+
+            with ssh_client.open_sftp() as sftp:
+                logging.info(f"远程文件读取: 正在读取远程文件 {remote_path}")
+                with sftp.open(remote_path, 'r') as remote_file:
+                    content = remote_file.read().decode('utf-8')
+                logging.info(f"远程文件读取: 成功读取文件 {remote_path}")
+                return content, True
+    except FileNotFoundError:
+        error_msg = f"远程文件读取: 远程文件 {remote_path} 不存在。"
+        logging.warning(error_msg)
+        return error_msg, False
+    except paramiko.AuthenticationException:
+        error_msg = "远程文件读取: SSH 认证失败，请检查用户名和密码。"
+        logging.error(error_msg)
+        return error_msg, False
+    except Exception as e:
+        error_msg = f"远程文件读取: 发生错误: {e}"
+        logging.error(error_msg)
+        return error_msg, False
+
 def _process_adguard_content(content: str, new_ip: str) -> tuple[str, bool]:
     """
     处理 AdGuard Home 配置文件内容，替换 rewrites 列表中的 IP 地址。
