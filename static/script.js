@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsContentElem = document.getElementById('results-content');
     const runTestBtn = document.getElementById('run-test');
     const saveConfigBtn = document.getElementById('save-config');
+    const remoteFileContentElem = document.getElementById('remote-file-content');
+    const remoteFileBtns = document.querySelectorAll('.remote-file-btn');
 
     const API_ENDPOINTS = {
         best_ip: '/api/best_ip',
@@ -12,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         logs: '/api/logs',
         config: '/api/config',
         run_test: '/api/run_test',
+        remote_file: '/api/remote_file',
     };
 
     async function fetchData(url, options = {}) {
@@ -115,6 +118,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchRemoteFile(target) {
+        remoteFileContentElem.value = `正在从 ${target} 加载文件内容...`;
+        remoteFileContentElem.classList.remove('error-message');
+
+        // Update active button style
+        remoteFileBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.target === target);
+        });
+
+        try {
+            // Use fetch directly to get raw text, as the API returns plain text
+            const response = await fetch(`${API_ENDPOINTS.remote_file}?target=${target}`);
+            const content = await response.text();
+            
+            if (!response.ok) {
+                // The error message is in the response body for non-200 statuses
+                throw new Error(content || `HTTP error! status: ${response.status}`);
+            }
+            
+            remoteFileContentElem.value = content;
+        } catch (error) {
+            remoteFileContentElem.value = `加载远程文件失败: ${error.message}`;
+            remoteFileContentElem.classList.add('error-message');
+        }
+    }
+
     saveConfigBtn.addEventListener('click', async () => {
         const newConfigText = configContentElem.value;
         saveConfigBtn.disabled = true;
@@ -148,6 +177,13 @@ document.addEventListener('DOMContentLoaded', () => {
             runTestBtn.disabled = false;
             runTestBtn.textContent = '立即优选';
         }
+    });
+
+    remoteFileBtns.forEach(button => {
+        button.addEventListener('click', () => {
+            const target = button.dataset.target;
+            fetchRemoteFile(target);
+        });
     });
     
     // 此函数只更新动态变化的数据
