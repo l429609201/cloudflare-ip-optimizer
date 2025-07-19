@@ -6,7 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const runTestBtn = document.getElementById('run-test');
     const saveConfigBtn = document.getElementById('save-config');
     const remoteFileContentElem = document.getElementById('remote-file-content');
+    const saveRemoteFileBtn = document.getElementById('save-remote-file-btn');
     const remoteFileBtns = document.querySelectorAll('.remote-file-btn');
+
+    let currentRemoteTarget = null; // 存储当前选择的远程目标
 
     const API_ENDPOINTS = {
         best_ip: '/api/best_ip',
@@ -119,6 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchRemoteFile(target) {
+        currentRemoteTarget = target; // 存储当前目标
+        saveRemoteFileBtn.disabled = false; // 启用保存按钮
+        remoteFileContentElem.readOnly = false; // 使文本框可编辑
+
         remoteFileContentElem.value = `正在从 ${target} 加载文件内容...`;
         remoteFileContentElem.classList.remove('error-message');
 
@@ -179,6 +186,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    saveRemoteFileBtn.addEventListener('click', async () => {
+        if (!currentRemoteTarget) {
+            alert('请先选择并加载一个远程文件。');
+            return;
+        }
+
+        const content = remoteFileContentElem.value;
+        saveRemoteFileBtn.disabled = true;
+        saveRemoteFileBtn.textContent = '正在保存...';
+
+        try {
+            const result = await fetchData(API_ENDPOINTS.remote_file, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    target: currentRemoteTarget,
+                    content: content
+                })
+            });
+            alert(result.message || '远程文件已成功保存！');
+        } catch (error) {
+            alert(`保存远程文件失败: ${error.message}`);
+        } finally {
+            saveRemoteFileBtn.disabled = false;
+            saveRemoteFileBtn.textContent = '保存更改';
+        }
+    });
+
     remoteFileBtns.forEach(button => {
         button.addEventListener('click', () => {
             const target = button.dataset.target;
@@ -196,6 +231,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial load
     updateDynamicData(); // 首次加载动态数据
     updateConfig();      // 首次加载配置，之后不再定时刷新
+
+    // 初始化远程文件模块的状态
+    remoteFileContentElem.readOnly = true;
+    saveRemoteFileBtn.disabled = true;
 
     // Periodically refresh data every 10 seconds
     setInterval(updateDynamicData, 10000);
