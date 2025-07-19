@@ -89,6 +89,12 @@ header h1 {
     padding-bottom: 0;
 }
 
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
 
 #status-card {
     display: flex;
@@ -202,11 +208,31 @@ header h1 {
     background-color: var(--accent-color);
 }
 
+.save-btn {
+    background-color: var(--success-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+}
+
+.save-btn:hover {
+    background-color: #218838; /* Darker green */
+}
+
 #save-config:hover {
     background-color: #5a6268;
 }
 
 #run-test:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.save-btn:disabled {
     background-color: #555;
     cursor: not-allowed;
 }
