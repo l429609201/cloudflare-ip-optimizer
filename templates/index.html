@@ -33,13 +33,16 @@
                 <div id="remote-file-card" class="card">
                     <div class="card-header">
                         <h2>远程文件内容</h2>
-                        <div class="button-group">
-                            <button class="remote-file-btn" data-target="openwrt">OpenWRT</button>
-                            <button class="remote-file-btn" data-target="mosdns">MosDNS</button>
-                            <button class="remote-file-btn" data-target="adguardhome">AdGuardHome</button>
+                        <div class="header-controls">
+                            <div class="button-group">
+                                <button class="remote-file-btn" data-target="openwrt">OpenWRT</button>
+                                <button class="remote-file-btn" data-target="mosdns">MosDNS</button>
+                                <button class="remote-file-btn" data-target="adguardhome">AdGuardHome</button>
+                            </div>
+                            <button id="save-remote-file-btn" class="save-btn">保存更改</button>
                         </div>
                     </div>
-                    <textarea id="remote-file-content" rows="15" readonly>请选择一个目标来读取文件内容。</textarea>
+                    <textarea id="remote-file-content" rows="15">请选择一个目标来读取文件内容。</textarea>
                 </div>
 
                 <div id="logs-card" class="card">
