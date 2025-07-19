@@ -242,36 +242,41 @@ def write_remote_file(config, target: str, content: str) -> tuple[str, bool]:
 
 def _process_adguard_content(content: str, new_ip: str) -> tuple[str, bool]:
     """
-    处理 AdGuard Home 配置文件内容，替换 rewrites 列表中的 IP 地址。
+    处理 AdGuard Home 配置文件内容，仅替换已存在的 rewrites 列表中的 IP 地址。
     返回 (更新后的内容, 是否有变化)
     """
     try:
         data = yaml.safe_load(content)
         if not isinstance(data, dict):
-            logging.error("AdGuard Home 更新: 配置文件不是一个有效的YAML字典。")
+            logging.error("AdGuard Home 更新: 配置文件不是一个有效的 YAML 字典。")
             return content, False
         
-        # 使用 setdefault 安全地获取或创建嵌套的键
-        filtering = data.setdefault('filtering', {})
-        rewrites = filtering.setdefault('rewrites', [])
+        # 使用 .get() 安全地获取嵌套的键，如果不存在则不作任何修改，避免向配置中添加新字段
+        filtering = data.get('filtering')
+        if not isinstance(filtering, dict):
+            logging.info("AdGuard Home 更新: 未在配置文件中找到 'filtering' 部分，跳过更新。")
+            return content, False
 
+        rewrites = filtering.get('rewrites')
         if not isinstance(rewrites, list):
-            logging.error(f"AdGuard Home 更新: 'filtering.rewrites' 应该是一个列表，但它是 {type(rewrites)}。")
+            logging.info(f"AdGuard Home 更新: 未在 'filtering' 部分中找到 'rewrites' 列表，跳过更新。")
             return content, False
 
         if not rewrites:
             logging.info("AdGuard Home 更新: 'rewrites' 列表为空，没有域名可以更新。请在 AdGuard Home 界面添加 DNS 重写规则。")
             return content, False
 
-        changed = False
+        has_changed = False
         for entry in rewrites:
-            if isinstance(entry, dict) and 'domain' in entry:
+            # 只更新包含 'domain' 和 'answer' 的字典条目
+            if isinstance(entry, dict) and 'domain' in entry and 'answer' in entry:
                 if entry.get('answer') != new_ip:
                     entry['answer'] = new_ip
-                    changed = True
+                    has_changed = True
         
-        if changed:
+        if has_changed:
             logging.info(f"AdGuard Home 更新: 已将 {len(rewrites)} 条重写规则的 IP 地址更新为 {new_ip}")
+            # 将更新后的数据转回 YAML 字符串。这会格式化文件，但能确保结构正确。
             return yaml.dump(data, sort_keys=False, allow_unicode=True), True
         else:
             logging.info("AdGuard Home 更新: 所有重写规则的 IP 地址已是最新，无需更新。")
