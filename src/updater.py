@@ -175,8 +175,28 @@ def read_remote_file(config, target: str) -> tuple[str, bool]:
                 logging.info(f"远程文件读取: 正在读取远程文件 {remote_path}")
                 with sftp.open(remote_path, 'r') as remote_file:
                     content = remote_file.read().decode('utf-8')
-                logging.info(f"远程文件读取: 成功读取文件 {remote_path}")
-                return content, True
+
+                # 如果目标是 AdGuard Home，只提取 rewrites 部分
+                if target == 'adguardhome':
+                    try:
+                        data = yaml.safe_load(content)
+                        rewrites = data.get('filtering', {}).get('rewrites', [])
+                        # 将 rewrites 部分格式化为 YAML 字符串以便在前端显示
+                        # 如果 rewrites 为空或不存在，提供一个提示
+                        if rewrites:
+                            display_content = yaml.dump({'rewrites': rewrites}, sort_keys=False, allow_unicode=True, indent=2)
+                        else:
+                            display_content = "# 远程配置文件中未找到或 'rewrites' 部分为空。\n# 您可以在此添加，格式如下：\nrewrites:\n  - domain: my.domain.com\n    answer: 1.2.3.4"
+                        logging.info(f"远程文件读取: 成功提取 AdGuard Home 的 rewrites 部分。")
+                        return display_content, True
+                    except yaml.YAMLError as e:
+                        error_msg = f"远程文件读取: 解析 AdGuard Home YAML 文件失败: {e}"
+                        logging.error(error_msg)
+                        return error_msg, False
+                else:
+                    logging.info(f"远程文件读取: 成功读取文件 {remote_path}")
+                    return content, True
+
     except FileNotFoundError:
         error_msg = f"远程文件读取: 远程文件 {remote_path} 不存在。"
         logging.warning(error_msg)
@@ -217,11 +237,45 @@ def write_remote_file(config, target: str, content: str) -> tuple[str, bool]:
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh_client.connect(hostname=host, port=port, username=username, password=password, timeout=10)
 
+            final_content = content
+            # 如果是 AdGuard Home，需要执行“读取-修改-写入”的原子操作
+            if target == 'adguardhome':
+                logging.info("远程文件写入 (AdGuard Home): 正在合并 rewrites...")
+                with ssh_client.open_sftp() as sftp:
+                    try:
+                        # 1. 读取远程的完整文件
+                        with sftp.open(remote_path, 'r') as remote_file:
+                            full_content_str = remote_file.read().decode('utf-8')
+                        full_data = yaml.safe_load(full_content_str)
+                        if not isinstance(full_data, dict):
+                            full_data = {} # 如果文件内容不是字典，则从头开始
+                    except (FileNotFoundError, yaml.YAMLError):
+                        # 如果文件不存在或格式错误，则创建一个新的字典
+                        full_data = {}
+                
+                try:
+                    # 2. 解析从前端发来的、只包含 rewrites 的 YAML 片段
+                    new_rewrites_data = yaml.safe_load(content)
+                    new_rewrites_list = new_rewrites_data.get('rewrites', [])
+                    if not isinstance(new_rewrites_list, list):
+                        raise yaml.YAMLError("'rewrites' 字段必须是一个列表。")
+                except yaml.YAMLError as e:
+                    error_msg = f"远程文件写入: 您提供的 rewrites 内容格式无效: {e}"
+                    logging.error(error_msg)
+                    return error_msg, False
+
+                # 3. 将新的 rewrites 列表合并回完整的配置数据中
+                filtering = full_data.setdefault('filtering', {})
+                filtering['rewrites'] = new_rewrites_list
+
+                # 4. 将完整的配置数据转换回 YAML 字符串
+                final_content = yaml.dump(full_data, sort_keys=False, allow_unicode=True, indent=2)
+
             remote_tmp_path = f"/tmp/updater_tmp_manual_{os.path.basename(remote_path)}"
             logging.info(f"远程文件写入: 正在写入临时文件 {remote_tmp_path}")
             with ssh_client.open_sftp() as sftp:
                 with sftp.open(remote_tmp_path, 'w') as remote_file:
-                    remote_file.write(content)
+                    remote_file.write(final_content)
             
             logging.info(f"远程文件写入: 正在移动临时文件以覆盖原文件")
             stdin, stdout, stderr = ssh_client.exec_command(f"mv -f {remote_tmp_path} {remote_path}")
