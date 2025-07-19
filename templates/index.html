@@ -30,8 +30,20 @@
                     </div>
                 </div>
 
+                <div id="remote-file-card" class="card">
+                    <div class="card-header">
+                        <h2>远程文件内容</h2>
+                        <div class="button-group">
+                            <button class="remote-file-btn" data-target="openwrt">OpenWRT</button>
+                            <button class="remote-file-btn" data-target="mosdns">MosDNS</button>
+                            <button class="remote-file-btn" data-target="adguardhome">AdGuardHome</button>
+                        </div>
+                    </div>
+                    <textarea id="remote-file-content" rows="15" readonly>请选择一个目标来读取文件内容。</textarea>
+                </div>
+
                 <div id="logs-card" class="card">
-                    <h2>实时日志</h2>
+                    <h2>实施日志</h2>
                     <pre id="log-content">正在加载...</pre>
                 </div>
             </div>
@@ -86,7 +98,7 @@
                     <li><code>openwrt_hosts_path</code>：OpenWRT 的 hosts 文件路径。</li>
                     <li><code>mosdns_hosts_path</code>：MosDNS 的 hosts 文件路径。</li>
                     <li><code>adguardhome_config_path</code>：AdGuard Home 的 YAML 配置文件路径。</li>
-                    <li><code>post_update_command</code>：更新成功后执行的命令，例如重启 MosDNS：<code>/etc/init.d/mosdns restart</code>。重启AdGuardHome：<code>/etc/init.d/AdGuardHome restart</code> 具体填写ADG执行文件路径。</li>
+                    <li><code>post_update_command</code>：更新成功后执行的命令，例如重启 MosDNS：<code>/etc/init.d/mosdns restart</code>。</li>
                     <li><code>[Download]</code>：下载配置。</li>
                     <li><code>proxy</code>：下载代理，用于加速访问 GitHub。留空则不使用代理。代理地址会直接拼在下载链接前面，请确保格式正确，例如：<code>https://ghproxy.com/</code>。</li>
                 </ul>
