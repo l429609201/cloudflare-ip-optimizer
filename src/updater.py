@@ -190,6 +190,56 @@ def read_remote_file(config, target: str) -> tuple[str, bool]:
         logging.error(error_msg)
         return error_msg, False
 
+def write_remote_file(config, target: str, content: str) -> tuple[str, bool]:
+    """
+    通过 SSH 连接到远程设备并写入指定文件的内容。
+    返回 (消息, 是否成功) 的元组。
+    """
+    host = config.get('host')
+    port = config.getint('port', fallback=22)
+    username = config.get('username')
+    password = config.get('password')
+
+    if target == 'adguardhome':
+        remote_path = config.get('adguardhome_config_path')
+    else: # openwrt or mosdns
+        remote_path = config.get(f"{target}_hosts_path")
+
+    if not remote_path:
+        error_msg = f"远程文件写入: 未在配置文件中找到 '{target}' 的远程路径。"
+        logging.error(error_msg)
+        return error_msg, False
+
+    logging.info(f"远程文件写入: 准备连接到 {host}:{port} 写入 {remote_path}")
+
+    try:
+        with paramiko.SSHClient() as ssh_client:
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(hostname=host, port=port, username=username, password=password, timeout=10)
+
+            remote_tmp_path = f"/tmp/updater_tmp_manual_{os.path.basename(remote_path)}"
+            logging.info(f"远程文件写入: 正在写入临时文件 {remote_tmp_path}")
+            with ssh_client.open_sftp() as sftp:
+                with sftp.open(remote_tmp_path, 'w') as remote_file:
+                    remote_file.write(content)
+            
+            logging.info(f"远程文件写入: 正在移动临时文件以覆盖原文件")
+            stdin, stdout, stderr = ssh_client.exec_command(f"mv -f {remote_tmp_path} {remote_path}")
+            exit_status = stdout.channel.recv_exit_status()
+            
+            if exit_status == 0:
+                success_msg = f"成功更新文件 {remote_path}。"
+                logging.info(f"远程文件写入: {success_msg}")
+                return success_msg, True
+            else:
+                error_msg = f"远程文件写入: 移动文件失败: {stderr.read().decode('utf-8').strip()}"
+                logging.error(error_msg)
+                return error_msg, False
+    except Exception as e:
+        error_msg = f"远程文件写入: 发生错误: {e}"
+        logging.error(error_msg)
+        return error_msg, False
+
 def _process_adguard_content(content: str, new_ip: str) -> tuple[str, bool]:
     """
     处理 AdGuard Home 配置文件内容，替换 rewrites 列表中的 IP 地址。
