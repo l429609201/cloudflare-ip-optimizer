@@ -1,11 +1,11 @@
 # 工作流名称
 name: Publish to Docker Hub
 
-# 触发条件：当有代码推送到 main 分支时触发此工作流
+# 触发条件：当创建并推送一个以 'v' 开头的标签时触发 (例如 v1.0.0)
 on:
   push:
-    branches:
-      - 'main'
+    tags:
+      - 'v*' # 匹配 v1, v1.2, v1.2.3 等版本标签
 
 jobs:
   # 定义一个名为 build-and-push 的作业
@@ -41,4 +41,4 @@ jobs:
           push: true # 确认执行推送操作
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/cloudflare-optimizer:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/cloudflare-optimizer:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/cloudflare-optimizer:${{ github.ref_name }}
