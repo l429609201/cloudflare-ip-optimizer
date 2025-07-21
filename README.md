@@ -1,7 +1,6 @@
 # Cloudflare IP 优选服务 (Docker 打包版)
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/l429609201/cloudflare-optimizer?style=flat-square&logo=docker)](https://hub.docker.com/r/l429609201/cloudflare-optimizer)
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/hbq0405/cloudflare-ip-optimizer/publish-to-dockerhub.yml?branch=main&style=flat-square&logo=github)](https://github.com/hbq0405/cloudflare-ip-optimizer/actions)
 
 🌩 自动测试 Cloudflare CDN 延迟和速度，筛选出最适合当前网络环境的 IP，并提供 Web UI 和 API 接口进行管理。
 
